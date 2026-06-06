@@ -93,10 +93,17 @@ env:
 Watch rollout:
 
 ```bash
-kubectl argo rollouts get rollout blog-api-blog-api -n demo --watch
+kubectl get rollout blog-api-blog-api -n demo
 ```
 
-Promote or abort:
+Restart the Argo Rollout without the kubectl plugin:
+
+```bash
+kubectl patch rollout blog-api-blog-api -n demo --type merge \
+  -p "{\"spec\":{\"restartAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}"
+```
+
+If you install the Argo Rollouts kubectl plugin, you can also promote or abort:
 
 ```bash
 kubectl argo rollouts promote blog-api-blog-api -n demo
@@ -118,4 +125,5 @@ Generate traffic:
 for i in $(seq 1 150); do curl -s -o /dev/null -w "%{http_code}\n" http://<gateway>/api/posts; done
 ```
 
-Expect `429` after the configured threshold.
+The local demo threshold is intentionally low, so expect `429` after a few
+requests.

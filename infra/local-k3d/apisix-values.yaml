@@ -47,6 +47,7 @@ apisix:
     path: /apisix/prometheus/metrics
     containerPort: 9091
   nginx:
+    workerProcesses: "1"
     logs:
       enableAccessLog: true
       accessLog: /dev/stdout

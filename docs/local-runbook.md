@@ -129,6 +129,19 @@ infra/local-k3d/deploy-local-apps.sh
 curl http://127.0.0.1:8080/api/posts
 ```
 
+The demo APISIX limit is intentionally low: 5 requests per 60 seconds. This
+makes manual verification fast.
+
+Manual check:
+
+```bash
+for i in $(seq 1 12); do
+  curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8080/api/posts
+done
+```
+
+You should see `429` after the quota is exhausted.
+
 ## 9. Deploy Apps Through Argo CD
 
 After APISIX is installed, apply the Argo CD applications:
@@ -146,6 +159,16 @@ ghcr.io/ghv5/blog-web:latest
 
 For private GHCR images, create `ghcr-pull-secret` in namespace `demo` and set
 `imagePullSecrets` in Helm values.
+
+To manually restart the Argo Rollout without the kubectl plugin:
+
+```bash
+kubectl patch rollout blog-api-blog-api -n demo --type merge \
+  -p "{\"spec\":{\"restartAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}"
+```
+
+Do not use `kubectl rollout restart rollout ...`; Kubernetes' built-in rollout
+command does not handle Argo Rollouts CRDs.
 
 ## 10. Observability
 
