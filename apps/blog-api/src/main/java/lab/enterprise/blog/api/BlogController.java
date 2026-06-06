@@ -19,7 +19,7 @@ public class BlogController {
     this.startedAt = Instant.now();
     this.posts = List.of(
         new PostResponse(
-            "welcome",
+            "welcome gehui",
             "Enterprise Delivery Lab",
             "A tiny Spring Boot API used to exercise CI, GitOps, canary release, and rollback."),
         new PostResponse(
