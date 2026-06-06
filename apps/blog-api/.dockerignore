@@ -1,0 +1,7 @@
+target
+!target/
+target/*
+!target/blog-api.jar
+.git
+.DS_Store
+coverage

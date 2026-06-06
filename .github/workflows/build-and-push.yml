@@ -1,0 +1,63 @@
+name: build-and-push
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/**'
+      - 'deploy/helm/**'
+      - 'ci/github-actions/build-and-push.yml'
+      - '.github/workflows/build-and-push.yml'
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: ${{ github.repository_owner }}
+
+jobs:
+  test-build-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        app:
+          - name: blog-api
+            context: apps/blog-api
+          - name: blog-web
+            context: apps/blog-web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Java
+        if: matrix.app.name == 'blog-api'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Test API
+        if: matrix.app.name == 'blog-api'
+        working-directory: apps/blog-api
+        run: mvn -B test
+
+      - name: Login to GHCR
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
+        with:
+          context: ${{ matrix.app.context }}
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/${{ matrix.app.name }}:${{ github.sha }}
+            ghcr.io/${{ env.OWNER }}/${{ matrix.app.name }}:latest

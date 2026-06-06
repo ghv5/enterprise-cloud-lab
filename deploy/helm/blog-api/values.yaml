@@ -1,0 +1,35 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/ghv5/blog-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+service:
+  port: 8080
+
+serviceMonitor:
+  enabled: false
+
+rollout:
+  enabled: true
+  steps:
+    - setWeight: 20
+    - pause:
+        duration: 60s
+    - setWeight: 50
+    - pause:
+        duration: 60s
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 96Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi
+
+env:
+  APP_VERSION: latest

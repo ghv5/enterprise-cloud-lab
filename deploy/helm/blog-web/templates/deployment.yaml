@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "blog-web.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "blog-web.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "blog-web.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "blog-web.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+{{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      containers:
+        - name: blog-web
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+{{ toYaml .Values.resources | indent 12 }}

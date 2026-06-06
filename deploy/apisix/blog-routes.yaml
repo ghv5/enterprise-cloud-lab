@@ -1,0 +1,52 @@
+apiVersion: apisix.apache.org/v2
+kind: ApisixPluginConfig
+metadata:
+  name: blog-rate-limit
+  namespace: demo
+spec:
+  plugins:
+    - name: limit-count
+      enable: true
+      config:
+        count: 120
+        time_window: 60
+        rejected_code: 429
+        key_type: var
+        key: remote_addr
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: blog-web
+  namespace: demo
+spec:
+  http:
+    - name: web
+      priority: 10
+      match:
+        paths:
+          - /*
+      plugin_config_name: blog-rate-limit
+      backends:
+        - serviceName: blog-web-blog-web
+          servicePort: 80
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: blog-api
+  namespace: demo
+spec:
+  http:
+    - name: api
+      priority: 100
+      match:
+        paths:
+          - /api/*
+          - /actuator/health
+          - /actuator/health/*
+          - /actuator/prometheus
+      plugin_config_name: blog-rate-limit
+      backends:
+        - serviceName: blog-api-blog-api
+          servicePort: 8080

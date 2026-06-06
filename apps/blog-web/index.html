@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Enterprise Cloud Lab</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f4f7fb;
+        color: #152033;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 48px 20px;
+      }
+
+      header {
+        margin-bottom: 32px;
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: 36px;
+        line-height: 1.12;
+      }
+
+      p {
+        line-height: 1.6;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        padding: 0 12px;
+        border: 1px solid #bfd2e8;
+        border-radius: 6px;
+        background: #ffffff;
+        font-size: 14px;
+      }
+
+      .posts {
+        display: grid;
+        gap: 14px;
+      }
+
+      article {
+        border: 1px solid #d8e1ec;
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 18px;
+      }
+
+      article h2 {
+        margin: 0 0 8px;
+        font-size: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Enterprise Cloud Lab</h1>
+        <p>A small blog frontend for testing GitOps, canary releases, rate limits, and rollback.</p>
+        <span id="status" class="status">Loading API data...</span>
+      </header>
+      <section id="posts" class="posts"></section>
+    </main>
+
+    <script>
+      const statusEl = document.querySelector('#status');
+      const postsEl = document.querySelector('#posts');
+
+      fetch('/api/posts')
+        .then((response) => response.json())
+        .then((payload) => {
+          statusEl.textContent = `API version: ${payload.meta.version}`;
+          postsEl.innerHTML = payload.data
+            .map((post) => `<article><h2>${post.title}</h2><p>${post.summary}</p></article>`)
+            .join('');
+        })
+        .catch(() => {
+          statusEl.textContent = 'API unavailable';
+        });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,100 @@
+fullnameOverride: apisix
+
+serviceAccount:
+  create: true
+
+rbac:
+  create: true
+
+replicaCount: 1
+timezone: Asia/Shanghai
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+service:
+  type: LoadBalancer
+  http:
+    enabled: true
+    servicePort: 80
+    containerPort: 9080
+  tls:
+    servicePort: 443
+
+metrics:
+  serviceMonitor:
+    enabled: false
+
+apisix:
+  enableIPv6: false
+  admin:
+    enabled: true
+    type: ClusterIP
+    servicePort: 9180
+    allow:
+      ipList:
+        - 0.0.0.0/0
+    credentials:
+      admin: edd1c9f034335f136f87ad84b625c8f1
+      viewer: 4054f7cf07e344346cd3f287985e76a2
+  prometheus:
+    enabled: true
+    path: /apisix/prometheus/metrics
+    containerPort: 9091
+  nginx:
+    logs:
+      enableAccessLog: true
+      accessLog: /dev/stdout
+      errorLog: /dev/stderr
+      errorLogLevel: warn
+
+etcd:
+  enabled: true
+  image:
+    repository: bitnamilegacy/etcd
+    tag: 3.5.10-debian-11-r2
+  replicaCount: 1
+  auth:
+    rbac:
+      create: false
+  persistence:
+    enabled: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+ingress-controller:
+  enabled: true
+  replicaCount: 1
+  config:
+    logLevel: info
+    provider:
+      syncPeriod: 30s
+      initSyncDelay: 15s
+    kubernetes:
+      ingressClass: apisix
+      defaultIngressClass: true
+  apisix:
+    adminService:
+      namespace: apisix
+      name: apisix-admin
+      port: 9180
+  gatewayProxy:
+    createDefault: true
+    provider:
+      controlPlane:
+        service:
+          name: apisix-admin
+          port: 9180
+        auth:
+          adminKey:
+            value: edd1c9f034335f136f87ad84b625c8f1
