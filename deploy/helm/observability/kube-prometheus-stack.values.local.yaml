@@ -1,0 +1,81 @@
+fullnameOverride: kube-prometheus-stack
+
+grafana:
+  enabled: true
+  service:
+    type: ClusterIP
+  grafana.ini:
+    server:
+      root_url: http://grafana.localhost:8080/
+      domain: grafana.localhost
+      serve_from_sub_path: false
+  persistence:
+    enabled: false
+  defaultDashboardsEnabled: true
+  sidecar:
+    dashboards:
+      enabled: true
+    datasources:
+      enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+alertmanager:
+  enabled: false
+
+prometheus:
+  service:
+    type: ClusterIP
+  prometheusSpec:
+    externalUrl: http://prometheus.localhost:8080/
+    routePrefix: /
+    maximumStartupDurationSeconds: 900
+    retention: 2d
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorNamespaceSelector: {}
+    ruleSelectorNilUsesHelmValues: false
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 5Gi
+    resources:
+      requests:
+        cpu: 200m
+        memory: 768Mi
+      limits:
+        cpu: "1"
+        memory: 1536Mi
+
+nodeExporter:
+  enabled: false
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 30m
+      memory: 48Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 30m
+      memory: 48Mi
+    limits:
+      cpu: 100m
+      memory: 96Mi

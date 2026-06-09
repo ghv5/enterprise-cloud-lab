@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skywalking-ui
+  labels:
+    app.kubernetes.io/name: skywalking-ui
+    app.kubernetes.io/part-of: observability-tracing
+spec:
+  replicas: {{ .Values.skywalking.ui.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: skywalking-ui
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: skywalking-ui
+        app.kubernetes.io/part-of: observability-tracing
+    spec:
+      containers:
+        - name: skywalking-ui
+          image: "{{ .Values.skywalking.ui.image.repository }}:{{ .Values.skywalking.ui.image.tag }}"
+          imagePullPolicy: {{ .Values.skywalking.ui.image.pullPolicy }}
+          env:
+            - name: SW_OAP_ADDRESS
+              value: "http://skywalking-oap.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.skywalking.oap.service.restPort }}"
+            {{- range $name, $value := .Values.skywalking.ui.env }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.skywalking.ui.service.port }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 40
+            periodSeconds: 15
+            timeoutSeconds: 5
+          resources:
+{{ toYaml .Values.skywalking.ui.resources | indent 12 }}

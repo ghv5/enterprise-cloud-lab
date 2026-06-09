@@ -1,0 +1,16 @@
+{{- if .Values.serviceMonitors.nacos.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: observability-addons-nacos
+  namespace: {{ .Release.Namespace }}
+spec:
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.serviceMonitors.nacos.namespace }}
+  selector:
+    matchLabels:
+{{ toYaml .Values.serviceMonitors.nacos.serviceLabelSelector | indent 6 }}
+  endpoints:
+{{ toYaml .Values.serviceMonitors.nacos.endpoints | indent 4 }}
+{{- end }}

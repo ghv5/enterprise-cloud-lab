@@ -48,7 +48,7 @@ Treat this directory as the repository root when pushing to GitHub.
 - GitOps: Argo CD.
 - Progressive delivery: Argo Rollouts.
 - Gateway: APISIX.
-- Observability: Prometheus, Grafana, Loki.
+- Observability: Prometheus, Grafana, Loki, SkyWalking.
 
 ## Business Apps
 
@@ -71,5 +71,25 @@ rollback, metrics, and Java agent tracing behavior easy to observe.
 
 Keep secrets outside Git. Use GitHub Actions secrets, Kubernetes Secrets, or a
 cloud secret manager.
+
+## Local Access
+
+All main UIs can be reached through APISIX on port `8080`:
+
+```text
+http://blog.localhost:8080/
+http://argocd.localhost:8080/
+http://grafana.localhost:8080/login
+http://prometheus.localhost:8080/graph
+http://skywalking.localhost:8080/
+http://loki.localhost:8080/ready
+```
+
+Grafana ships with two lab-specific dashboards:
+
+```text
+Enterprise Delivery Lab Overview
+Enterprise Delivery Lab High Frequency
+```
 
 For local setup, start with [docs/local-runbook.md](docs/local-runbook.md).

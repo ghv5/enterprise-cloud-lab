@@ -1,0 +1,35 @@
+javaToolOptions: "-javaagent:/skywalking/agent/skywalking-agent.jar"
+
+extraEnv:
+  - name: SW_AGENT_NAME
+    value: blog-api
+  - name: SW_AGENT_COLLECTOR_BACKEND_SERVICES
+    value: skywalking-oap.observability.svc.cluster.local:11800
+  - name: SW_AGENT_INSTANCE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.name
+  - name: SW_AGENT_NAMESPACE
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+
+initContainers:
+  - name: install-skywalking-agent
+    image: apache/skywalking-java-agent:9.3.0-java17
+    imagePullPolicy: IfNotPresent
+    command:
+      - sh
+      - -c
+      - cp -R /skywalking/agent/. /skywalking-agent
+    volumeMounts:
+      - name: skywalking-agent
+        mountPath: /skywalking-agent
+
+volumes:
+  - name: skywalking-agent
+    emptyDir: {}
+
+volumeMounts:
+  - name: skywalking-agent
+    mountPath: /skywalking/agent

@@ -73,8 +73,6 @@ Username:
 admin
 ```
 
-## 5. Push Repository to GitHub
-
 ## 5. Install APISIX
 
 ```bash
@@ -126,7 +124,7 @@ docker build -f apps/blog-api/Dockerfile.local -t blog-api:local apps/blog-api
 docker build -t blog-web:local apps/blog-web
 k3d image import blog-api:local blog-web:local -c enterprise-lab
 infra/local-k3d/deploy-local-apps.sh
-curl http://127.0.0.1:8080/api/posts
+curl http://blog.localhost:8080/api/posts
 ```
 
 The demo APISIX limit is intentionally low: 5 requests per 60 seconds. This
@@ -136,7 +134,7 @@ Manual check:
 
 ```bash
 for i in $(seq 1 12); do
-  curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8080/api/posts
+  curl -s -o /dev/null -w "%{http_code}\n" http://blog.localhost:8080/api/posts
 done
 ```
 
@@ -170,15 +168,227 @@ kubectl patch rollout blog-api-blog-api -n demo --type merge \
 Do not use `kubectl rollout restart rollout ...`; Kubernetes' built-in rollout
 command does not handle Argo Rollouts CRDs.
 
-## 10. Observability
+## 10. Install Observability
 
-First milestone:
+Install Prometheus, Grafana, Loki, Alloy, and the APISIX `ServiceMonitor`:
 
-```text
-Spring Boot Actuator: /actuator/health and /actuator/prometheus
-APISIX metrics
-Grafana dashboards
-Loki logs
+```bash
+infra/local-k3d/install-observability.sh
 ```
 
-SkyWalking can be added later after the first GitOps flow is stable.
+This step also upgrades `blog-api` once so that Prometheus can scrape
+`/actuator/prometheus`.
+
+Main access entries through APISIX:
+
+```text
+http://blog.localhost:8080/
+http://argocd.localhost:8080/
+http://grafana.localhost:8080/login
+http://prometheus.localhost:8080/graph
+http://skywalking.localhost:8080/
+http://loki.localhost:8080/ready
+```
+
+Grafana credentials:
+
+```bash
+kubectl -n observability get secret kube-prometheus-stack-grafana \
+  -o jsonpath='{.data.admin-user}' | base64 -d; echo
+
+kubectl -n observability get secret kube-prometheus-stack-grafana \
+  -o jsonpath='{.data.admin-password}' | base64 -d; echo
+```
+
+Grafana dashboard names:
+
+```text
+Enterprise Delivery Lab Overview
+Enterprise Delivery Lab High Frequency
+```
+
+Optional troubleshooting access:
+
+```bash
+infra/local-k3d/port-forward-prometheus.sh
+kubectl port-forward -n observability svc/loki 3100:3100
+infra/local-k3d/port-forward-grafana.sh
+infra/local-k3d/port-forward-skywalking.sh
+```
+
+## 11. Install SkyWalking
+
+```bash
+infra/local-k3d/install-skywalking.sh
+```
+
+This installer:
+
+- deploys SkyWalking OAP and UI
+- imports the Java agent image if possible
+- upgrades `blog-api` with `JAVA_TOOL_OPTIONS=-javaagent:...`
+
+Open the UI locally:
+
+```bash
+open http://skywalking.localhost:8080/
+```
+
+## 12. Manual Acceptance Test
+
+### 12.1 Business and gateway
+
+```bash
+curl http://blog.localhost:8080/api/posts
+curl http://blog.localhost:8080/api/info
+```
+
+Expected:
+
+- HTTP `200`
+- `meta.version` is `local`
+
+### 12.2 Rate limit
+
+Wait for a fresh 60-second window, then run:
+
+```bash
+for i in $(seq 1 40); do
+  curl -s -o /dev/null -w "%{http_code}\n" http://blog.localhost:8080/api/posts
+done
+```
+
+Expected:
+
+- you should see `429` within the 40 requests
+
+### 12.3 Rollout restart
+
+```bash
+kubectl patch rollout blog-api-blog-api -n demo --type merge \
+  -p "{\"spec\":{\"restartAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}"
+
+kubectl get rollout blog-api-blog-api -n demo -w
+```
+
+Expected:
+
+- new ReplicaSet appears
+- rollout pauses on canary step and then resumes after the configured pause
+
+### 12.4 Prometheus
+
+```bash
+curl -s http://prometheus.localhost:8080/api/v1/targets | jq '.data.activeTargets[] |
+  {job: .labels.job, health: .health, scrapeUrl: .scrapeUrl} |
+  select((.job|test("blog-api|apisix-prometheus-metrics|alloy")) or (.scrapeUrl|test("blog-api|apisix")))'
+```
+
+Expected:
+
+- `blog-api-blog-api` targets are `up`
+- `apisix-prometheus-metrics` target is `up`
+- `alloy` targets are `up`
+
+Useful metric checks:
+
+```bash
+curl -s 'http://prometheus.localhost:8080/api/v1/query?query=http_server_requests_seconds_count%7Bapplication%3D%22blog-api%22%2Curi%3D%22%2Fapi%2Fposts%22%7D' | jq
+curl -s 'http://prometheus.localhost:8080/api/v1/query?query=histogram_quantile(0.95,sum%20by%20(le)(rate(http_server_requests_seconds_bucket%7Bapplication%3D%22blog-api%22,uri%3D%22%2Fapi%2Fposts%22%7D%5B15m%5D)))' | jq
+curl -s 'http://prometheus.localhost:8080/api/v1/query?query=sum(rate(apisix_http_requests_total%5B2m%5D))' | jq
+```
+
+### 12.5 Loki
+
+```bash
+curl -s 'http://loki.localhost:8080/loki/api/v1/query_range?query=%7Bnamespace%3D%22demo%22,app%3D%22blog-api%22%7D&limit=5' | jq
+```
+
+Expected:
+
+- at least one stream for `namespace=demo`
+- labels include `app=blog-api`, `pod`, `container`
+
+### 12.6 Grafana datasource wiring
+
+```bash
+USER=$(kubectl -n observability get secret kube-prometheus-stack-grafana -o jsonpath='{.data.admin-user}' | base64 -d)
+PASS=$(kubectl -n observability get secret kube-prometheus-stack-grafana -o jsonpath='{.data.admin-password}' | base64 -d)
+curl -s -u "$USER:$PASS" http://grafana.localhost:8080/api/datasources | jq
+curl -s -u "$USER:$PASS" 'http://grafana.localhost:8080/api/search?query=Enterprise' | jq
+```
+
+Expected:
+
+- datasource list contains `Prometheus`
+- datasource list contains `Loki`
+- dashboard list contains `Enterprise Delivery Lab Overview`
+- dashboard list contains `Enterprise Delivery Lab High Frequency`
+
+### 12.7 SkyWalking
+
+Generate traffic first:
+
+```bash
+for i in $(seq 1 20); do
+  curl -s http://blog.localhost:8080/api/posts >/dev/null
+done
+```
+
+Then query services:
+
+```bash
+START=$(date '+%Y-%m-%d %H00')
+END=$(date '+%Y-%m-%d %H59')
+curl -s http://skywalking.localhost:8080/graphql \
+  -H 'Content-Type: application/json' \
+  -d "{\"query\":\"query { getAllServices(duration: {start: \\\"${START}\\\", end: \\\"${END}\\\", step: MINUTE}) { id name shortName layers normal } }\"}" | jq
+```
+
+Expected:
+
+- service list contains `blog-api|demo|`
+
+Query traces:
+
+```bash
+SERVICE_ID=$(curl -s http://skywalking.localhost:8080/graphql \
+  -H 'Content-Type: application/json' \
+  -d "{\"query\":\"query { getAllServices(duration: {start: \\\"${START}\\\", end: \\\"${END}\\\", step: MINUTE}) { id name } }\"}" \
+  | jq -r '.data.getAllServices[] | select(.name=="blog-api|demo|") | .id')
+
+curl -s http://skywalking.localhost:8080/graphql \
+  -H 'Content-Type: application/json' \
+  -d "{\"query\":\"query { queryBasicTraces(condition: { serviceId: \\\"${SERVICE_ID}\\\", queryDuration: {start: \\\"${START}\\\", end: \\\"${END}\\\", step: MINUTE}, traceState: ALL, queryOrder: BY_START_TIME, paging: { pageNum: 1, pageSize: 100 } }) { traces { endpointNames duration isError traceIds } } }\"}" | jq
+```
+
+Expected:
+
+- traces include `GET:/api/posts`
+- `isError` is `false`
+
+### 12.8 Automated self-test
+
+Run:
+
+```bash
+infra/local-k3d/self-test.sh
+```
+
+Expected:
+
+- script exits with code `0`
+- final line is `self-test passed`
+
+## 13. Verified Snapshot
+
+```text
+Verified locally on 2026-06-06:
+- APISIX rate limit returned 429 after quota exhaustion
+- Prometheus scraped blog-api, APISIX, and Alloy
+- http_server_requests_seconds_count{uri="/api/posts"} returned samples for two blog-api instances
+- Loki returned demo/blog-api log streams
+- Grafana datasource API contained Prometheus and Loki
+- SkyWalking service list contained blog-api|demo|
+- SkyWalking traces contained GET:/api/posts
+```

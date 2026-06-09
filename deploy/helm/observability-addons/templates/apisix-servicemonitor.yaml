@@ -1,0 +1,16 @@
+{{- if .Values.serviceMonitors.apisix.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: observability-addons-apisix
+  namespace: {{ .Release.Namespace }}
+spec:
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.serviceMonitors.apisix.namespace }}
+  selector:
+    matchLabels:
+{{ toYaml .Values.serviceMonitors.apisix.serviceLabelSelector | indent 6 }}
+  endpoints:
+{{ toYaml .Values.serviceMonitors.apisix.endpoints | indent 4 }}
+{{- end }}

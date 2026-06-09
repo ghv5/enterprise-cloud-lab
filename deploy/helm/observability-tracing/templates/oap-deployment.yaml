@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skywalking-oap
+  labels:
+    app.kubernetes.io/name: skywalking-oap
+    app.kubernetes.io/part-of: observability-tracing
+spec:
+  replicas: {{ .Values.skywalking.oap.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: skywalking-oap
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: skywalking-oap
+        app.kubernetes.io/part-of: observability-tracing
+    spec:
+      containers:
+        - name: skywalking-oap
+          image: "{{ .Values.skywalking.oap.image.repository }}:{{ .Values.skywalking.oap.image.tag }}"
+          imagePullPolicy: {{ .Values.skywalking.oap.image.pullPolicy }}
+          env:
+            - name: SW_STORAGE
+              value: {{ .Values.skywalking.oap.storage | quote }}
+            {{- range $name, $value := .Values.skywalking.oap.env }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.skywalking.oap.service.grpcPort }}
+            - name: rest
+              containerPort: {{ .Values.skywalking.oap.service.restPort }}
+          startupProbe:
+            tcpSocket:
+              port: rest
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket:
+              port: rest
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: rest
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+          resources:
+{{ toYaml .Values.skywalking.oap.resources | indent 12 }}

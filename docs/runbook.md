@@ -110,6 +110,14 @@ kubectl argo rollouts promote blog-api-blog-api -n demo
 kubectl argo rollouts abort blog-api-blog-api -n demo
 ```
 
+Without the plugin, the rollout still advances through timed pause steps. Watch
+it with:
+
+```bash
+kubectl describe rollout blog-api-blog-api -n demo
+kubectl get pods -n demo -w
+```
+
 ## Rate-Limit Drill
 
 If you do not want Argo CD to manage the route yet, apply APISIX route and
@@ -127,3 +135,49 @@ for i in $(seq 1 150); do curl -s -o /dev/null -w "%{http_code}\n" http://<gatew
 
 The local demo threshold is intentionally low, so expect `429` after a few
 requests.
+
+## Observability Drill
+
+Install the local observability stack:
+
+```bash
+infra/local-k3d/install-observability.sh
+infra/local-k3d/install-skywalking.sh
+```
+
+Prometheus checks:
+
+```bash
+curl -s http://prometheus.localhost:8080/api/v1/targets | jq
+curl -s 'http://prometheus.localhost:8080/api/v1/query?query=http_server_requests_seconds_count%7Bapplication%3D%22blog-api%22%2Curi%3D%22%2Fapi%2Fposts%22%7D' | jq
+curl -s 'http://prometheus.localhost:8080/api/v1/query?query=histogram_quantile(0.95,sum%20by%20(le)(rate(http_server_requests_seconds_bucket%7Bapplication%3D%22blog-api%22,uri%3D%22%2Fapi%2Fposts%22%7D%5B15m%5D)))' | jq
+curl -s 'http://prometheus.localhost:8080/api/v1/query?query=sum(rate(apisix_http_requests_total%5B2m%5D))' | jq
+```
+
+Loki check:
+
+```bash
+curl -s 'http://loki.localhost:8080/loki/api/v1/query_range?query=%7Bnamespace%3D%22demo%22,app%3D%22blog-api%22%7D&limit=5' | jq
+```
+
+SkyWalking check:
+
+```bash
+START=$(date '+%Y-%m-%d %H00')
+END=$(date '+%Y-%m-%d %H59')
+curl -s http://skywalking.localhost:8080/graphql \
+  -H 'Content-Type: application/json' \
+  -d "{\"query\":\"query { getAllServices(duration: {start: \\\"${START}\\\", end: \\\"${END}\\\", step: MINUTE}) { id name shortName } }\"}" | jq
+```
+
+The local verification target is:
+
+```text
+Prometheus target up
+Loki demo/blog-api stream visible
+SkyWalking service blog-api|demo| visible
+SkyWalking GET:/api/posts trace visible
+Grafana dashboards:
+- Enterprise Delivery Lab Overview
+- Enterprise Delivery Lab High Frequency
+```

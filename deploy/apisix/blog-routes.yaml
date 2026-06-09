@@ -24,6 +24,10 @@ spec:
     - name: web
       priority: 10
       match:
+        hosts:
+          - 127.0.0.1
+          - localhost
+          - blog.localhost
         paths:
           - /*
       plugin_config_name: blog-rate-limit
@@ -41,6 +45,10 @@ spec:
     - name: api
       priority: 100
       match:
+        hosts:
+          - 127.0.0.1
+          - localhost
+          - blog.localhost
         paths:
           - /api/*
           - /actuator/health

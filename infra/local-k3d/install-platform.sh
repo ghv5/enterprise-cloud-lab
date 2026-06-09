@@ -4,6 +4,7 @@ set -euo pipefail
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 helm upgrade --install argo-cd infra/local-k3d/charts/argo-cd-8.3.0.tgz \
   -n argocd \
+  -f infra/local-k3d/argo-cd-values.local.yaml \
   --wait \
   --timeout 10m
 

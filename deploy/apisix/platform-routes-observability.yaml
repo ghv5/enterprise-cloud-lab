@@ -1,0 +1,72 @@
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: grafana
+  namespace: observability
+spec:
+  http:
+    - name: grafana-root
+      priority: 200
+      match:
+        hosts:
+          - grafana.localhost
+        paths:
+          - /*
+      backends:
+        - serviceName: kube-prometheus-stack-grafana
+          servicePort: 80
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: prometheus
+  namespace: observability
+spec:
+  http:
+    - name: prometheus-root
+      priority: 200
+      match:
+        hosts:
+          - prometheus.localhost
+        paths:
+          - /*
+      backends:
+        - serviceName: kube-prometheus-stack-prometheus
+          servicePort: 9090
+          resolveGranularity: service
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: skywalking
+  namespace: observability
+spec:
+  http:
+    - name: skywalking-root
+      priority: 200
+      match:
+        hosts:
+          - skywalking.localhost
+        paths:
+          - /*
+      backends:
+        - serviceName: skywalking-ui
+          servicePort: 18080
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: loki
+  namespace: observability
+spec:
+  http:
+    - name: loki-root
+      priority: 200
+      match:
+        hosts:
+          - loki.localhost
+        paths:
+          - /*
+      backends:
+        - serviceName: loki
+          servicePort: 3100

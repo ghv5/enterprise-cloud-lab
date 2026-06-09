@@ -1,0 +1,45 @@
+skywalking:
+  oap:
+    image:
+      repository: docker.m.daocloud.io/apache/skywalking-oap-server
+      tag: 9.7.0
+      pullPolicy: IfNotPresent
+    replicas: 1
+    service:
+      grpcPort: 11800
+      restPort: 12800
+    resources:
+      requests:
+        cpu: 200m
+        memory: 768Mi
+      limits:
+        cpu: "1"
+        memory: 1536Mi
+    storage: h2
+    env:
+      JAVA_OPTS: "-Xms512m -Xmx1024m"
+      SW_CORE_RECORD_DATA_TTL: "3"
+      SW_CORE_METRICS_DATA_TTL: "3"
+      TZ: Asia/Shanghai
+  ui:
+    image:
+      repository: docker.m.daocloud.io/apache/skywalking-ui
+      tag: 9.7.0
+      pullPolicy: IfNotPresent
+    replicas: 1
+    service:
+      port: 18080
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    env:
+      SW_SERVER_PORT: "18080"
+      TZ: Asia/Shanghai
+    externalService:
+      enabled: true
+      type: NodePort
+      nodePort: 30081

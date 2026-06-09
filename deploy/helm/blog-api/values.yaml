@@ -33,3 +33,13 @@ resources:
 
 env:
   APP_VERSION: latest
+
+extraEnv: []
+
+javaToolOptions: ""
+
+initContainers: []
+
+volumes: []
+
+volumeMounts: []

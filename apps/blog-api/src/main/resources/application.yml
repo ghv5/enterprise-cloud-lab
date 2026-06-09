@@ -28,3 +28,6 @@ management:
     tags:
       application: ${spring.application.name}
       version: ${app.version}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true

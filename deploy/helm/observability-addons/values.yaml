@@ -1,0 +1,53 @@
+serviceMonitors:
+  apisix:
+    enabled: true
+    namespace: apisix
+    serviceLabelSelector:
+      app.kubernetes.io/name: apisix
+      app.kubernetes.io/service: apisix-prometheus-metrics
+    endpoints:
+      - port: prometheus
+        path: /apisix/prometheus/metrics
+        interval: 30s
+        scrapeTimeout: 10s
+
+  nacos:
+    enabled: true
+    namespace: infra
+    serviceLabelSelector:
+      app.kubernetes.io/name: nacos
+    endpoints:
+      - port: client
+        path: /nacos/actuator/prometheus
+        interval: 30s
+        scrapeTimeout: 10s
+        basicAuth:
+          username:
+            name: nacos-monitor-basic-auth
+            key: username
+          password:
+            name: nacos-monitor-basic-auth
+            key: password
+
+externalServices:
+  grafana:
+    enabled: true
+    name: grafana-external
+    type: NodePort
+    port: 80
+    targetPort: 3000
+    nodePort: 30300
+    selector:
+      app.kubernetes.io/instance: kube-prometheus-stack
+      app.kubernetes.io/name: grafana
+
+  prometheus:
+    enabled: true
+    name: prometheus-external
+    type: NodePort
+    port: 9090
+    targetPort: 9090
+    nodePort: 30900
+    selector:
+      app.kubernetes.io/name: prometheus
+      operator.prometheus.io/name: kube-prometheus-stack-prometheus

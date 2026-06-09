@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: skywalking-oap
+  labels:
+    app.kubernetes.io/name: skywalking-oap
+    app.kubernetes.io/part-of: observability-tracing
+spec:
+  selector:
+    app.kubernetes.io/name: skywalking-oap
+  ports:
+    - name: grpc
+      port: {{ .Values.skywalking.oap.service.grpcPort }}
+      targetPort: grpc
+    - name: rest
+      port: {{ .Values.skywalking.oap.service.restPort }}
+      targetPort: rest

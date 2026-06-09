@@ -20,6 +20,6 @@ helm upgrade --install blog-web deploy/helm/blog-web \
   --wait \
   --timeout 5m
 
-kubectl apply -f deploy/apisix/blog-routes.yaml
+kubectl apply -f deploy/apisix/
 
 kubectl get pods -n demo

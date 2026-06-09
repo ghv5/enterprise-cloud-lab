@@ -1,0 +1,18 @@
+{{- if .Values.skywalking.ui.externalService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: skywalking-ui-external
+  labels:
+    app.kubernetes.io/name: skywalking-ui
+    app.kubernetes.io/part-of: observability-tracing
+spec:
+  type: {{ .Values.skywalking.ui.externalService.type }}
+  selector:
+    app.kubernetes.io/name: skywalking-ui
+  ports:
+    - name: http
+      port: {{ .Values.skywalking.ui.service.port }}
+      targetPort: http
+      nodePort: {{ .Values.skywalking.ui.externalService.nodePort }}
+{{- end }}
