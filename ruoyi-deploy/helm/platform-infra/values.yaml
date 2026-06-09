@@ -1,0 +1,133 @@
+global:
+  storageClass: hostpath
+
+mysql:
+  enabled: true
+  image:
+    repository: mysql
+    tag: 8.0.42
+    pullPolicy: IfNotPresent
+  auth:
+    rootPassword: ruoyi123
+    username: ruoyi
+    password: ruoyi123
+    database: ry-cloud
+  service:
+    type: ClusterIP
+    port: 3306
+  persistence:
+    enabled: true
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  initSql: |
+    CREATE DATABASE IF NOT EXISTS `ry-config` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+    CREATE DATABASE IF NOT EXISTS `ry-job` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+    CREATE DATABASE IF NOT EXISTS `ry-workflow` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+    GRANT ALL PRIVILEGES ON `ry-cloud`.* TO 'ruoyi'@'%';
+    GRANT ALL PRIVILEGES ON `ry-config`.* TO 'ruoyi'@'%';
+    GRANT ALL PRIVILEGES ON `ry-job`.* TO 'ruoyi'@'%';
+    GRANT ALL PRIVILEGES ON `ry-workflow`.* TO 'ruoyi'@'%';
+    FLUSH PRIVILEGES;
+
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: 7.2.8
+    pullPolicy: IfNotPresent
+  auth:
+    enabled: true
+    password: ruoyi123
+  service:
+    type: ClusterIP
+    port: 6379
+  persistence:
+    enabled: true
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+kafka:
+  enabled: true
+  image:
+    repository: apache/kafka
+    tag: 3.9.0
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    clientPort: 9092
+    controllerPort: 9093
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  kraft:
+    clusterId: MkU3OEVBNTcwNTJENDM2Qk
+    nodeId: "0"
+
+nacos:
+  enabled: true
+  image:
+    repository: nacos/nacos-server
+    tag: v2.5.1-slim
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    ports:
+      client: 8848
+      raft: 9848
+      rpc: 9849
+    external:
+      enabled: true
+      type: NodePort
+      clientNodePort: 30848
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  persistence:
+    enabled: true
+    size: 8Gi
+  env:
+    TZ: Asia/Shanghai
+    mode: standalone
+    preferHostMode: ip
+    jvmXms: 512m
+    jvmXmx: 512m
+    jvmXmn: 256m
+    jvmMs: 128m
+    jvmMms: 256m
+  auth:
+    identityKey: ruoyi-vue-plus-key
+    identityValue: ruoyi-vue-plus-value
+    tokenSecretKey: rE7bYayhpvduYwCxuhckybEPDXyna6xwm5m7MZjtjrdXjVxAbXAMccXHyaJvB346
+  database:
+    host: ""
+    port: 3306
+    name: ry-config
+    username: ruoyi
+    password: ruoyi123
+  adminClient:
+    url: http://ruoyi-monitor.ruoyi:9100
+    username: ruoyi
+    password: 123456

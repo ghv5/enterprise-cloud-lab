@@ -1,0 +1,13 @@
+RuoYi backend services rendered.
+
+Key services enabled by default:
+- gateway
+- auth
+- system
+- resource
+- monitor
+
+Before install, make sure:
+- Nacos is reachable at {{ .Values.global.nacos.serverAddr }}
+- Backend images exist in the local Docker Desktop image store
+- Datasource and application Nacos configs have been imported for the {{ .Values.global.commonEnv.SPRING_PROFILES_ACTIVE }} namespace

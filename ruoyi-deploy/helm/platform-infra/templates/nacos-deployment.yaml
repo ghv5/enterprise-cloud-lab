@@ -1,0 +1,95 @@
+{{- if .Values.nacos.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform-infra.nacos.fullname" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "platform-infra.nacos.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "platform-infra.nacos.fullname" . }}
+    spec:
+      initContainers:
+        - name: wait-for-mysql
+          image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
+          imagePullPolicy: {{ .Values.mysql.image.pullPolicy }}
+          command:
+            - sh
+            - -ec
+            - |
+              until mysqladmin ping -h {{ default (include "platform-infra.mysql.fullname" .) .Values.nacos.database.host }} -P {{ .Values.nacos.database.port }} -u{{ .Values.nacos.database.username }} -p{{ .Values.nacos.database.password }} --silent; do
+                echo "waiting for mysql";
+                sleep 3;
+              done
+      containers:
+        - name: nacos
+          image: "{{ .Values.nacos.image.repository }}:{{ .Values.nacos.image.tag }}"
+          imagePullPolicy: {{ .Values.nacos.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: {{ .Values.nacos.env.TZ | quote }}
+            - name: MODE
+              value: {{ .Values.nacos.env.mode | quote }}
+            - name: PREFER_HOST_MODE
+              value: {{ .Values.nacos.env.preferHostMode | quote }}
+            - name: JVM_XMS
+              value: {{ .Values.nacos.env.jvmXms | quote }}
+            - name: JVM_XMX
+              value: {{ .Values.nacos.env.jvmXmx | quote }}
+            - name: JVM_XMN
+              value: {{ .Values.nacos.env.jvmXmn | quote }}
+            - name: JVM_MS
+              value: {{ .Values.nacos.env.jvmMs | quote }}
+            - name: JVM_MMS
+              value: {{ .Values.nacos.env.jvmMms | quote }}
+          ports:
+            - name: client
+              containerPort: 8848
+            - name: raft
+              containerPort: 9848
+            - name: rpc
+              containerPort: 9849
+          startupProbe:
+            httpGet:
+              path: /nacos/v1/console/health/liveness
+              port: client
+            failureThreshold: 40
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /nacos/v1/console/health/readiness
+              port: client
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /nacos/v1/console/health/liveness
+              port: client
+            periodSeconds: 15
+            timeoutSeconds: 5
+          resources:
+{{ toYaml .Values.nacos.resources | indent 12 }}
+          volumeMounts:
+            - name: nacos-config
+              mountPath: /home/nacos/conf/application.properties
+              subPath: application.properties
+            - name: nacos-data
+              mountPath: /home/nacos/logs
+      volumes:
+        - name: nacos-config
+          configMap:
+            name: {{ include "platform-infra.nacos.fullname" . }}
+        - name: nacos-data
+{{- if .Values.nacos.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "platform-infra.nacos.fullname" . }}
+{{- else }}
+          emptyDir: {}
+{{- end }}
+{{- end }}

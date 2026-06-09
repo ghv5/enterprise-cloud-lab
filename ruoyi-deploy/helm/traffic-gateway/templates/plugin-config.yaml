@@ -1,0 +1,16 @@
+apiVersion: apisix.apache.org/v2
+kind: ApisixPluginConfig
+metadata:
+  name: {{ .Values.backendRateLimit.name }}
+  namespace: {{ .Values.routeNamespace }}
+spec:
+  ingressClassName: {{ .Values.ingressClassName }}
+  plugins:
+    - name: limit-count
+      enable: true
+      config:
+        count: {{ .Values.backendRateLimit.count }}
+        time_window: {{ .Values.backendRateLimit.timeWindow }}
+        rejected_code: {{ .Values.backendRateLimit.rejectedCode }}
+        key_type: var
+        key: remote_addr

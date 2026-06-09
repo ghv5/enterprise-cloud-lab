@@ -1,0 +1,137 @@
+{{- range $name, $svc := .Values.services }}
+{{- if $svc.enabled }}
+{{- $svcSkywalkingEnabled := $.Values.global.skywalking.enabled }}
+{{- if hasKey $svc "skywalkingEnabled" }}
+{{- $svcSkywalkingEnabled = and $.Values.global.skywalking.enabled $svc.skywalkingEnabled }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ruoyi-backend.serviceFullname" (dict "root" $ "name" $name) }}
+  labels:
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/part-of: ruoyi-backend
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name }}
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ $name }}
+        app.kubernetes.io/instance: {{ $.Release.Name }}
+        app.kubernetes.io/part-of: ruoyi-backend
+      {{- with $.Values.global.podAnnotations }}
+      annotations:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+    spec:
+      {{- with $.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- if $svcSkywalkingEnabled }}
+      initContainers:
+        - name: skywalking-agent
+          image: "{{ $.Values.global.skywalking.agentImage.repository }}:{{ $.Values.global.skywalking.agentImage.tag }}"
+          imagePullPolicy: {{ $.Values.global.skywalking.agentImage.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - cp -R /skywalking/agent/. {{ $.Values.global.skywalking.agentMountPath }}/
+          volumeMounts:
+            - name: skywalking-agent
+              mountPath: {{ $.Values.global.skywalking.agentMountPath }}
+      {{- end }}
+      containers:
+        - name: {{ $name }}
+          image: "{{ $svc.image.repository }}:{{ $svc.image.tag }}"
+          imagePullPolicy: {{ $svc.image.pullPolicy }}
+          env:
+            {{- range $envName, $envValue := $.Values.global.commonEnv }}
+            - name: {{ $envName }}
+              value: {{ $envValue | quote }}
+            {{- end }}
+            - name: SERVER_PORT
+              value: {{ $svc.port | quote }}
+            - name: JAVA_OPTS
+              {{- if $svcSkywalkingEnabled }}
+              value: "{{ $svc.javaOpts }} -Dskywalking.agent.service_name=ruoyi-{{ $name }} -Dskywalking.collector.backend_service={{ $.Values.global.skywalking.oapServer }} -javaagent:{{ $.Values.global.skywalking.agentMountPath }}/skywalking-agent.jar"
+              {{- else }}
+              value: {{ $svc.javaOpts | quote }}
+              {{- end }}
+            - name: SPRING_CLOUD_NACOS_SERVER_ADDR
+              value: {{ $.Values.global.nacos.serverAddr | quote }}
+            - name: SPRING_CLOUD_NACOS_USERNAME
+              value: {{ $.Values.global.nacos.username | quote }}
+            - name: SPRING_CLOUD_NACOS_PASSWORD
+              value: {{ $.Values.global.nacos.password | quote }}
+            - name: SPRING_CLOUD_NACOS_DISCOVERY_GROUP
+              value: {{ $.Values.global.nacos.discoveryGroup | quote }}
+            - name: SPRING_CLOUD_NACOS_CONFIG_GROUP
+              value: {{ $.Values.global.nacos.configGroup | quote }}
+            {{- range $svc.extraEnv }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ $svc.port }}
+          {{- range $svc.extraPorts }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+          {{- end }}
+          startupProbe:
+            httpGet:
+              path: {{ $svc.probes.path }}
+              port: http
+              httpHeaders:
+                - name: Authorization
+                  value: Basic cnVveWk6MTIzNDU2
+            periodSeconds: 10
+            timeoutSeconds: {{ $svc.probes.timeoutSeconds }}
+            {{- if $svcSkywalkingEnabled }}
+            failureThreshold: 60
+            {{- else }}
+            failureThreshold: 30
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: {{ $svc.probes.path }}
+              port: http
+              httpHeaders:
+                - name: Authorization
+                  value: Basic cnVveWk6MTIzNDU2
+            initialDelaySeconds: {{ $svc.probes.initialDelaySeconds }}
+            periodSeconds: {{ $svc.probes.periodSeconds }}
+            timeoutSeconds: {{ $svc.probes.timeoutSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ $svc.probes.path }}
+              port: http
+              httpHeaders:
+                - name: Authorization
+                  value: Basic cnVveWk6MTIzNDU2
+            initialDelaySeconds: {{ add $svc.probes.initialDelaySeconds 20 }}
+            periodSeconds: {{ $svc.probes.periodSeconds }}
+            timeoutSeconds: {{ $svc.probes.timeoutSeconds }}
+          resources:
+{{ toYaml $svc.resources | indent 12 }}
+          {{- if $svcSkywalkingEnabled }}
+          volumeMounts:
+            - name: skywalking-agent
+              mountPath: {{ $.Values.global.skywalking.agentMountPath }}
+              readOnly: false
+          {{- end }}
+      {{- if $svcSkywalkingEnabled }}
+      volumes:
+        - name: skywalking-agent
+          emptyDir: {}
+      {{- end }}
+---
+{{- end }}
+{{- end }}

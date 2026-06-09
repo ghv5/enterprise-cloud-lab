@@ -1,0 +1,17 @@
+{{- if .Values.kafka.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "platform-infra.kafka.fullname" . }}
+spec:
+  type: {{ .Values.kafka.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "platform-infra.kafka.fullname" . }}
+  ports:
+    - name: kafka
+      port: {{ .Values.kafka.service.clientPort }}
+      targetPort: kafka
+    - name: controller
+      port: {{ .Values.kafka.service.controllerPort }}
+      targetPort: controller
+{{- end }}

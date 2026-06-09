@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ruoyi-frontend
+description: Frontend deployment for ruoyi-plus-soybean
+type: application
+version: 0.1.0
+appVersion: "2.2.0"

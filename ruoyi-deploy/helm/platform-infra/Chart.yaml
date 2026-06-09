@@ -1,0 +1,6 @@
+apiVersion: v2
+name: platform-infra
+description: Local Kubernetes infrastructure for RuoYi on Docker Desktop
+type: application
+version: 0.1.0
+appVersion: "2.6.1"

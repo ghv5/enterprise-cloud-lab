@@ -1,0 +1,24 @@
+{{- if .Values.nacos.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "platform-infra.nacos.fullname" . }}
+  labels:
+    app.kubernetes.io/name: nacos
+    app.kubernetes.io/component: config-center
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: {{ .Values.nacos.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "platform-infra.nacos.fullname" . }}
+  ports:
+    - name: client
+      port: {{ .Values.nacos.service.ports.client }}
+      targetPort: client
+    - name: raft
+      port: {{ .Values.nacos.service.ports.raft }}
+      targetPort: raft
+    - name: rpc
+      port: {{ .Values.nacos.service.ports.rpc }}
+      targetPort: rpc
+{{- end }}

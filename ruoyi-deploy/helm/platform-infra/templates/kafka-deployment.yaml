@@ -1,0 +1,84 @@
+{{- if .Values.kafka.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform-infra.kafka.fullname" . }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "platform-infra.kafka.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "platform-infra.kafka.fullname" . }}
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: kafka
+          image: "{{ .Values.kafka.image.repository }}:{{ .Values.kafka.image.tag }}"
+          imagePullPolicy: {{ .Values.kafka.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -ec
+          args:
+            - |
+              cat > /tmp/server.properties <<EOF
+              process.roles=broker,controller
+              node.id={{ .Values.kafka.kraft.nodeId }}
+              controller.quorum.voters={{ .Values.kafka.kraft.nodeId }}@${POD_IP}:{{ .Values.kafka.service.controllerPort }}
+              listeners=PLAINTEXT://${POD_IP}:{{ .Values.kafka.service.clientPort }},CONTROLLER://${POD_IP}:{{ .Values.kafka.service.controllerPort }}
+              advertised.listeners=PLAINTEXT://${POD_IP}:{{ .Values.kafka.service.clientPort }}
+              listener.security.protocol.map=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+              controller.listener.names=CONTROLLER
+              inter.broker.listener.name=PLAINTEXT
+              log.dirs=/var/lib/kafka/data
+              auto.create.topics.enable=true
+              offsets.topic.replication.factor=1
+              transaction.state.log.replication.factor=1
+              transaction.state.log.min.isr=1
+              EOF
+              /opt/kafka/bin/kafka-storage.sh format -t "${CLUSTER_ID}" -c /tmp/server.properties --ignore-formatted
+              exec /opt/kafka/bin/kafka-server-start.sh /tmp/server.properties
+          env:
+            - name: CLUSTER_ID
+              value: {{ .Values.kafka.kraft.clusterId | quote }}
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          ports:
+            - name: kafka
+              containerPort: {{ .Values.kafka.service.clientPort }}
+            - name: controller
+              containerPort: {{ .Values.kafka.service.controllerPort }}
+          startupProbe:
+            tcpSocket:
+              port: kafka
+            failureThreshold: 60
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: kafka
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: kafka
+            periodSeconds: 15
+          resources:
+{{ toYaml .Values.kafka.resources | indent 12 }}
+          volumeMounts:
+            - name: kafka-data
+              mountPath: /var/lib/kafka/data
+      volumes:
+        - name: kafka-data
+{{- if .Values.kafka.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "platform-infra.kafka.fullname" . }}
+{{- else }}
+          emptyDir: {}
+{{- end }}
+{{- end }}

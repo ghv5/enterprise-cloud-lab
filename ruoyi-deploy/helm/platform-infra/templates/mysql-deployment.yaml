@@ -1,0 +1,80 @@
+{{- if .Values.mysql.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform-infra.mysql.fullname" . }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "platform-infra.mysql.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "platform-infra.mysql.fullname" . }}
+    spec:
+      containers:
+        - name: mysql
+          image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
+          imagePullPolicy: {{ .Values.mysql.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: Asia/Shanghai
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "platform-infra.mysql.fullname" . }}
+                  key: mysql-root-password
+            - name: MYSQL_DATABASE
+              value: {{ .Values.mysql.auth.database | quote }}
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "platform-infra.mysql.fullname" . }}
+                  key: mysql-user
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "platform-infra.mysql.fullname" . }}
+                  key: mysql-password
+          ports:
+            - name: mysql
+              containerPort: 3306
+          readinessProbe:
+            tcpSocket:
+              port: mysql
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: mysql
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          resources:
+{{ toYaml .Values.mysql.resources | indent 12 }}
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: mysql-init
+              mountPath: /docker-entrypoint-initdb.d/01-init-ruoyi-databases.sql
+              subPath: 01-init-ruoyi-databases.sql
+            - name: mysql-config
+              mountPath: /etc/mysql/conf.d/my.cnf
+              subPath: my.cnf
+      volumes:
+        - name: mysql-init
+          configMap:
+            name: {{ include "platform-infra.mysql.fullname" . }}
+        - name: mysql-config
+          configMap:
+            name: {{ include "platform-infra.mysql.fullname" . }}
+        - name: mysql-data
+{{- if .Values.mysql.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "platform-infra.mysql.fullname" . }}
+{{- else }}
+          emptyDir: {}
+{{- end }}
+{{- end }}

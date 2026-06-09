@@ -1,0 +1,32 @@
+{{- if .Values.backend.enabled }}
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: ruoyi-backend
+  namespace: {{ .Values.routeNamespace }}
+spec:
+  http:
+    - name: ruoyi-backend
+      {{- if .Values.backend.host }}
+      match:
+        hosts:
+          - {{ .Values.backend.host | quote }}
+        paths:
+          - {{ printf "%s/*" .Values.backend.path | quote }}
+      {{- else }}
+      match:
+        paths:
+          - {{ printf "%s/*" .Values.backend.path | quote }}
+      {{- end }}
+      plugin_config_name: {{ .Values.backendRateLimit.name | quote }}
+      plugins:
+        - name: proxy-rewrite
+          enable: true
+          config:
+            regex_uri:
+              - "^/prod-api/(.*)"
+              - "/$1"
+      backends:
+        - serviceName: {{ .Values.backend.serviceName }}
+          servicePort: {{ .Values.backend.servicePort }}
+{{- end }}

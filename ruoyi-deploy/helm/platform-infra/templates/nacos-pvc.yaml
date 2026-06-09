@@ -1,0 +1,15 @@
+{{- if and .Values.nacos.enabled .Values.nacos.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "platform-infra.nacos.fullname" . }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.global.storageClass }}
+  storageClassName: {{ .Values.global.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.nacos.persistence.size }}
+{{- end }}

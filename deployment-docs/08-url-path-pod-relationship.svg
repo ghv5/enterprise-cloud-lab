@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="980" viewBox="0 0 1500 980">
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-gray" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#475569"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#059669"/>
+    </marker>
+    <style>
+      .page { fill: #f8fafc; }
+      .title { font: 700 28px Arial, sans-serif; fill: #0f172a; }
+      .sub { font: 400 15px Arial, sans-serif; fill: #475569; }
+      .zone { stroke: #cbd5e1; stroke-width: 1.5; rx: 18; ry: 18; }
+      .zone-title { font: 700 18px Arial, sans-serif; fill: #0f172a; }
+      .box { stroke: #94a3b8; stroke-width: 1.5; rx: 12; ry: 12; }
+      .box-title { font: 700 16px Arial, sans-serif; fill: #0f172a; }
+      .box-sub { font: 400 13px Arial, sans-serif; fill: #475569; }
+      .note { font: 400 12px Arial, sans-serif; fill: #64748b; }
+      .legend { font: 400 13px Arial, sans-serif; fill: #334155; }
+      .main { stroke: #2563eb; stroke-width: 4; fill: none; marker-end: url(#arrow-blue); }
+      .dep { stroke: #475569; stroke-width: 2.5; fill: none; marker-end: url(#arrow-gray); }
+      .obs { stroke: #059669; stroke-width: 2.5; fill: none; stroke-dasharray: 8 6; marker-end: url(#arrow-green); }
+      .rule { stroke: #7c3aed; stroke-width: 2; fill: none; stroke-dasharray: 6 6; marker-end: url(#arrow-gray); }
+    </style>
+  </defs>
+
+  <rect class="page" x="0" y="0" width="1500" height="980"/>
+
+  <text x="42" y="52" class="title">URL 访问路径下的 Pod 关系示意图</text>
+  <text x="42" y="80" class="sub">观察 URL：GET http://127.0.0.1:30080/prod-api/auth/code</text>
+
+  <line x1="1040" y1="54" x2="1110" y2="54" class="main"/>
+  <text x="1120" y="59" class="legend">主请求链路</text>
+  <line x1="1040" y1="78" x2="1110" y2="78" class="dep"/>
+  <text x="1120" y="83" class="legend">服务依赖</text>
+  <line x1="1230" y1="78" x2="1300" y2="78" class="obs"/>
+  <text x="1310" y="83" class="legend">观测采集</text>
+
+  <rect class="zone" x="40" y="120" width="280" height="700" fill="#f1f5f9"/>
+  <text x="64" y="154" class="zone-title">宿主机</text>
+
+  <rect class="box" x="78" y="220" width="205" height="96" fill="#ffffff"/>
+  <text x="104" y="254" class="box-title">Browser / curl</text>
+  <text x="104" y="280" class="box-sub">127.0.0.1:30080</text>
+
+  <rect class="zone" x="360" y="120" width="280" height="700" fill="#eff6ff"/>
+  <text x="384" y="154" class="zone-title">apisix namespace</text>
+
+  <rect class="box" x="398" y="220" width="205" height="96" fill="#dbeafe"/>
+  <text x="426" y="254" class="box-title">apisix</text>
+  <text x="426" y="280" class="box-sub">数据面</text>
+
+  <rect class="box" x="398" y="410" width="205" height="92" fill="#e0f2fe"/>
+  <text x="426" y="444" class="box-title">ingress-ctrl</text>
+  <text x="426" y="470" class="box-sub">同步 K8s 规则</text>
+
+  <rect class="box" x="398" y="600" width="205" height="92" fill="#e2e8f0"/>
+  <text x="426" y="634" class="box-title">apisix-etcd</text>
+  <text x="426" y="660" class="box-sub">保存路由配置</text>
+
+  <rect class="zone" x="680" y="120" width="420" height="700" fill="#f8fafc"/>
+  <text x="704" y="154" class="zone-title">ruoyi namespace</text>
+
+  <rect class="box" x="720" y="185" width="160" height="88" fill="#dbeafe"/>
+  <text x="762" y="218" class="box-title">gateway</text>
+  <text x="748" y="244" class="box-sub">统一后端入口</text>
+
+  <rect class="box" x="910" y="185" width="150" height="88" fill="#d1fae5"/>
+  <text x="966" y="218" class="box-title">auth</text>
+  <text x="944" y="244" class="box-sub">验证码 / 登录</text>
+
+  <rect class="box" x="720" y="360" width="150" height="82" fill="#f1f5f9"/>
+  <text x="772" y="392" class="box-title">system</text>
+  <text x="748" y="418" class="box-sub">用户 / 权限</text>
+
+  <rect class="box" x="910" y="360" width="150" height="82" fill="#f1f5f9"/>
+  <text x="954" y="392" class="box-title">resource</text>
+  <text x="946" y="418" class="box-sub">文件资源</text>
+
+  <rect class="box" x="720" y="535" width="150" height="82" fill="#fef3c7"/>
+  <text x="766" y="567" class="box-title">monitor</text>
+  <text x="750" y="593" class="box-sub">运维辅助</text>
+
+  <rect class="box" x="910" y="535" width="150" height="82" fill="#e0f2fe"/>
+  <text x="958" y="567" class="box-title">frontend</text>
+  <text x="946" y="593" class="box-sub">静态页面</text>
+
+  <rect class="zone" x="1140" y="120" width="310" height="340" fill="#fff7ed"/>
+  <text x="1164" y="154" class="zone-title">infra namespace</text>
+
+  <rect class="box" x="1180" y="190" width="105" height="70" fill="#fde68a"/>
+  <text x="1210" y="222" class="box-title">nacos</text>
+  <text x="1198" y="244" class="box-sub">配置 / 注册</text>
+
+  <rect class="box" x="1310" y="190" width="105" height="70" fill="#fecaca"/>
+  <text x="1342" y="222" class="box-title">redis</text>
+  <text x="1328" y="244" class="box-sub">验证码缓存</text>
+
+  <rect class="box" x="1180" y="315" width="105" height="70" fill="#fed7aa"/>
+  <text x="1212" y="347" class="box-title">mysql</text>
+  <text x="1194" y="369" class="box-sub">业务 / 配置库</text>
+
+  <rect class="box" x="1310" y="315" width="105" height="70" fill="#e9d5ff"/>
+  <text x="1340" y="347" class="box-title">kafka</text>
+  <text x="1322" y="369" class="box-sub">消息基础设施</text>
+
+  <rect class="zone" x="1140" y="500" width="310" height="320" fill="#ecfdf5"/>
+  <text x="1164" y="534" class="zone-title">observability namespace</text>
+
+  <rect class="box" x="1174" y="570" width="112" height="70" fill="#dcfce7"/>
+  <text x="1192" y="602" class="box-title">prometheus</text>
+  <text x="1198" y="624" class="box-sub">指标抓取</text>
+
+  <rect class="box" x="1305" y="570" width="112" height="70" fill="#d1fae5"/>
+  <text x="1334" y="602" class="box-title">grafana</text>
+  <text x="1328" y="624" class="box-sub">指标 / 日志</text>
+
+  <rect class="box" x="1174" y="690" width="112" height="70" fill="#ccfbf1"/>
+  <text x="1206" y="722" class="box-title">alloy</text>
+  <text x="1194" y="744" class="box-sub">日志采集</text>
+
+  <rect class="box" x="1305" y="690" width="112" height="70" fill="#a7f3d0"/>
+  <text x="1340" y="722" class="box-title">loki</text>
+  <text x="1328" y="744" class="box-sub">日志存储</text>
+
+  <rect class="box" x="1174" y="785" width="243" height="30" fill="#bbf7d0"/>
+  <text x="1212" y="805" class="box-sub">skywalking-oap / ui：链路追踪</text>
+
+  <path class="main" d="M283 268 L398 268"/>
+  <text x="308" y="250" class="note">NodePort</text>
+
+  <path class="main" d="M603 268 C655 268 655 229 720 229"/>
+  <text x="610" y="232" class="note">/prod-api/*</text>
+
+  <path class="main" d="M880 229 L910 229"/>
+  <text x="880" y="212" class="note">/auth/code</text>
+
+  <path class="rule" d="M500 502 L500 600"/>
+  <text x="514" y="558" class="note">配置落 etcd</text>
+
+  <path class="rule" d="M500 410 L500 316"/>
+  <text x="514" y="372" class="note">同步给 APISIX</text>
+
+  <path class="dep" d="M800 273 C800 305 1190 170 1228 190"/>
+  <path class="dep" d="M985 273 C985 305 1195 170 1228 190"/>
+  <path class="dep" d="M795 360 C795 300 1175 300 1230 260"/>
+
+  <path class="dep" d="M985 273 C1050 285 1265 260 1358 260"/>
+  <path class="dep" d="M795 442 C845 485 1182 410 1232 385"/>
+  <path class="dep" d="M1232 260 L1232 315"/>
+  <text x="1135" y="285" class="note">Nacos 依赖 MySQL</text>
+
+  <path class="obs" d="M500 316 C530 825 1110 610 1174 605"/>
+  <path class="obs" d="M800 273 C950 470 1100 585 1174 605"/>
+  <path class="obs" d="M985 273 C1080 455 1125 585 1174 605"/>
+
+  <path class="obs" d="M800 273 C950 640 1100 725 1174 725"/>
+  <path class="obs" d="M985 273 C1080 620 1125 715 1174 725"/>
+  <path class="obs" d="M1286 725 L1305 725"/>
+  <path class="obs" d="M1286 605 L1305 605"/>
+
+  <path class="obs" d="M800 273 C980 830 1110 805 1174 800"/>
+  <path class="obs" d="M985 273 C1090 815 1120 805 1174 800"/>
+
+  <rect x="42" y="855" width="1408" height="88" rx="14" ry="14" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="66" y="884" class="box-title">读图顺序</text>
+  <text x="66" y="912" class="box-sub">1. 蓝线：真实 URL 主路径，Browser -> APISIX -> gateway -> auth。</text>
+  <text x="66" y="934" class="box-sub">2. 灰线：服务依赖，业务服务启动和运行依赖 Nacos / Redis / MySQL；Kafka 当前不在该 URL 主链路上。</text>
+  <text x="700" y="912" class="box-sub">3. 绿虚线：观测路径，Prometheus 抓指标，Alloy 采日志到 Loki，SkyWalking 接收 trace。</text>
+</svg>

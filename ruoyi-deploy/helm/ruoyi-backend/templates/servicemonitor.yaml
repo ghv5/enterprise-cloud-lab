@@ -1,0 +1,30 @@
+{{- if .Values.global.serviceMonitor.enabled }}
+{{- range $name, $svc := .Values.services }}
+{{- if $svc.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "ruoyi-backend.serviceFullname" (dict "root" $ "name" $name) }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name }}
+      app.kubernetes.io/part-of: ruoyi-backend
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: {{ $.Values.global.serviceMonitor.interval }}
+      scrapeTimeout: {{ $.Values.global.serviceMonitor.scrapeTimeout }}
+      {{- if $.Values.global.serviceMonitor.basicAuth.enabled }}
+      basicAuth:
+        username:
+          name: {{ $.Values.global.serviceMonitor.basicAuth.usernameSecret.name }}
+          key: {{ $.Values.global.serviceMonitor.basicAuth.usernameSecret.key }}
+        password:
+          name: {{ $.Values.global.serviceMonitor.basicAuth.passwordSecret.name }}
+          key: {{ $.Values.global.serviceMonitor.basicAuth.passwordSecret.key }}
+      {{- end }}
+---
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,192 @@
+global:
+  imagePullSecrets: []
+  podAnnotations: {}
+  commonEnv:
+    TZ: Asia/Shanghai
+    SPRING_PROFILES_ACTIVE: dev
+  nacos:
+    serverAddr: release-platform-infra-nacos.infra.svc.cluster.local:8848
+    username: nacos
+    password: nacos
+    discoveryGroup: DEFAULT_GROUP
+    configGroup: DEFAULT_GROUP
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+    basicAuth:
+      enabled: true
+      usernameSecret:
+        name: ruoyi-actuator-basic-auth
+        key: username
+      passwordSecret:
+        name: ruoyi-actuator-basic-auth
+        key: password
+      credentials:
+        username: ruoyi
+        password: 123456
+  skywalking:
+    enabled: false
+    oapServer: skywalking-oap.observability.svc.cluster.local:11800
+    agentMountPath: /ruoyi/skywalking/agent
+    agentImage:
+      repository: local/ruoyi-skywalking-agent
+      tag: 9.6.0
+      pullPolicy: IfNotPresent
+
+services:
+  gateway:
+    enabled: true
+    skywalkingEnabled: true
+    image:
+      repository: local/ruoyi-gateway
+      tag: latest
+      pullPolicy: IfNotPresent
+    port: 8080
+    service:
+      type: ClusterIP
+      port: 8080
+    probes:
+      path: /actuator/health
+      initialDelaySeconds: 30
+      periodSeconds: 15
+      timeoutSeconds: 5
+    resources:
+      requests:
+        cpu: 100m
+        memory: 384Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    javaOpts: "-Xms256m -Xmx512m"
+    extraEnv: []
+  auth:
+    enabled: true
+    skywalkingEnabled: true
+    image:
+      repository: local/ruoyi-auth
+      tag: latest
+      pullPolicy: IfNotPresent
+    port: 9210
+    service:
+      type: ClusterIP
+      port: 9210
+    probes:
+      path: /actuator/health
+      initialDelaySeconds: 30
+      periodSeconds: 15
+      timeoutSeconds: 5
+    resources:
+      requests:
+        cpu: 100m
+        memory: 384Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    javaOpts: "-Xms256m -Xmx512m"
+    extraEnv: []
+  system:
+    enabled: true
+    skywalkingEnabled: true
+    image:
+      repository: local/ruoyi-system
+      tag: latest
+      pullPolicy: IfNotPresent
+    port: 9201
+    service:
+      type: ClusterIP
+      port: 9201
+    probes:
+      path: /actuator/health
+      initialDelaySeconds: 30
+      periodSeconds: 15
+      timeoutSeconds: 5
+    resources:
+      requests:
+        cpu: 100m
+        memory: 384Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    javaOpts: "-Xms256m -Xmx512m"
+    extraEnv: []
+  resource:
+    enabled: true
+    skywalkingEnabled: true
+    image:
+      repository: local/ruoyi-resource
+      tag: latest
+      pullPolicy: IfNotPresent
+    port: 9204
+    service:
+      type: ClusterIP
+      port: 9204
+    probes:
+      path: /actuator/health
+      initialDelaySeconds: 30
+      periodSeconds: 15
+      timeoutSeconds: 5
+    resources:
+      requests:
+        cpu: 100m
+        memory: 384Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    javaOpts: "-Xms256m -Xmx512m"
+    extraEnv: []
+  monitor:
+    enabled: true
+    skywalkingEnabled: false
+    image:
+      repository: local/ruoyi-monitor
+      tag: latest
+      pullPolicy: IfNotPresent
+    port: 9100
+    service:
+      type: ClusterIP
+      port: 9100
+    probes:
+      path: /actuator/health
+      initialDelaySeconds: 30
+      periodSeconds: 15
+      timeoutSeconds: 5
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 750m
+        memory: 768Mi
+    javaOpts: "-Xms256m -Xmx512m"
+    extraEnv: []
+  job:
+    enabled: false
+    image:
+      repository: local/ruoyi-job
+      tag: latest
+      pullPolicy: IfNotPresent
+    port: 9203
+    extraPorts:
+      - name: snail
+        containerPort: 29203
+        servicePort: 29203
+    service:
+      type: ClusterIP
+      port: 9203
+    probes:
+      path: /actuator/health
+      initialDelaySeconds: 30
+      periodSeconds: 15
+      timeoutSeconds: 5
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    javaOpts: "-Xms512m -Xmx1024m"
+    extraEnv:
+      - name: SNAIL_PORT
+        value: "29203"

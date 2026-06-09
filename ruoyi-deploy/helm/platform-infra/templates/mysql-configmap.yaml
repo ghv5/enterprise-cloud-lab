@@ -1,0 +1,16 @@
+{{- if .Values.mysql.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "platform-infra.mysql.fullname" . }}
+data:
+  01-init-ruoyi-databases.sql: |
+{{ .Values.mysql.initSql | indent 4 }}
+  my.cnf: |
+    [mysqld]
+    default-authentication-plugin=mysql_native_password
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_general_ci
+    explicit_defaults_for_timestamp=true
+    lower_case_table_names=1
+{{- end }}

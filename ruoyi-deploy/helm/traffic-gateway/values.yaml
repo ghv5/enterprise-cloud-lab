@@ -1,0 +1,118 @@
+ingressClassName: apisix
+routeNamespace: ruoyi
+
+apisix:
+  fullnameOverride: apisix
+  serviceAccount:
+    create: true
+  rbac:
+    create: true
+  replicaCount: 1
+  timezone: Asia/Shanghai
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  service:
+    type: NodePort
+    http:
+      servicePort: 80
+      containerPort: 9080
+      nodePort: 30080
+  metrics:
+    serviceMonitor:
+      enabled: false
+  apisix:
+    enableIPv6: false
+    admin:
+      enabled: true
+      type: ClusterIP
+      servicePort: 9180
+      allow:
+        ipList:
+          - 0.0.0.0/0
+    prometheus:
+      enabled: true
+      path: /apisix/prometheus/metrics
+      containerPort: 9091
+    nginx:
+      logs:
+        enableAccessLog: true
+        accessLog: /dev/stdout
+        errorLog: /dev/stderr
+        errorLogLevel: warn
+  etcd:
+    enabled: false
+  externalEtcd:
+    host:
+      - http://traffic-gateway-external-etcd.apisix.svc.cluster.local:2379
+    user: ""
+    password: ""
+  ingress-controller:
+    enabled: true
+    deployment:
+      replicas: 1
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
+    config:
+      logLevel: info
+      provider:
+        syncPeriod: 30s
+        initSyncDelay: 15s
+      kubernetes:
+        ingressClass: apisix
+        defaultIngressClass: true
+    apisix:
+      adminService:
+        namespace: apisix
+        name: apisix-admin
+        port: 9180
+    gatewayProxy:
+      createDefault: true
+      provider:
+        controlPlane:
+          service:
+            name: apisix-admin
+            port: 9180
+          auth:
+            adminKey:
+              value: edd1c9f034335f136f87ad84b625c8f1
+
+backendRateLimit:
+  name: ruoyi-backend-rate-limit
+  count: 120
+  timeWindow: 60
+  rejectedCode: 429
+
+externalEtcd:
+  image: quay.io/coreos/etcd:v3.5.16
+  serviceName: traffic-gateway-external-etcd
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+frontend:
+  enabled: true
+  host: ""
+  path: /
+  serviceName: ruoyi-frontend-ruoyi-frontend
+  servicePort: 80
+
+backend:
+  enabled: true
+  host: ""
+  path: /prod-api
+  serviceName: ruoyi-backend-ruoyi-backend-gateway
+  servicePort: 8080

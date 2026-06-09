@@ -1,0 +1,6 @@
+apiVersion: v2
+name: observability-tracing
+description: Lightweight SkyWalking tracing stack for local Docker Desktop Kubernetes
+type: application
+version: 0.1.0
+appVersion: 9.7.0
