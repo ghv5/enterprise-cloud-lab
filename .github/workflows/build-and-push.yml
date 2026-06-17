@@ -6,7 +6,12 @@ on:
       - main
     paths:
       - 'apps/**'
-      - 'deploy/helm/**'
+      - 'platform/**'
+      - 'ops/docker/**'
+      - 'pom.xml'
+      - 'mvnw'
+      - 'mvnw.cmd'
+      - '.mvn/**'
       - 'ci/github-actions/build-and-push.yml'
       - '.github/workflows/build-and-push.yml'
 
@@ -16,36 +21,73 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  test-build-push:
+  verify-java:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - run: ./mvnw -B -ntp verify
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: java-app-jars
+          path: |
+            apps/blog-api/target/blog-api.jar
+            apps/admin-server/target/admin-server-0.1.0-SNAPSHOT.jar
+            apps/api-gateway/target/api-gateway-0.1.0-SNAPSHOT.jar
+            apps/user-service/target/user-service-0.1.0-SNAPSHOT.jar
+            apps/order-service/target/order-service-0.1.0-SNAPSHOT.jar
+
+  build-and-push:
+    needs: verify-java
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
     strategy:
+      fail-fast: false
       matrix:
-        app:
-          - name: blog-api
+        include:
+          - image: blog-api
             context: apps/blog-api
-          - name: blog-web
+            dockerfile: apps/blog-api/Dockerfile.local
+            build_args: ''
+          - image: blog-web
             context: apps/blog-web
+            dockerfile: apps/blog-web/Dockerfile
+            build_args: ''
+          - image: enterprise-cloud-lab-admin-server
+            context: .
+            dockerfile: ops/docker/Dockerfile.java
+            build_args: JAR_FILE=apps/admin-server/target/admin-server-0.1.0-SNAPSHOT.jar
+          - image: enterprise-cloud-lab-api-gateway
+            context: .
+            dockerfile: ops/docker/Dockerfile.java
+            build_args: JAR_FILE=apps/api-gateway/target/api-gateway-0.1.0-SNAPSHOT.jar
+          - image: enterprise-cloud-lab-user-service
+            context: .
+            dockerfile: ops/docker/Dockerfile.java
+            build_args: JAR_FILE=apps/user-service/target/user-service-0.1.0-SNAPSHOT.jar
+          - image: enterprise-cloud-lab-order-service
+            context: .
+            dockerfile: ops/docker/Dockerfile.java
+            build_args: JAR_FILE=apps/order-service/target/order-service-0.1.0-SNAPSHOT.jar
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
-      - name: Setup Java
-        if: matrix.app.name == 'blog-api'
-        uses: actions/setup-java@v5
+      - uses: actions/download-artifact@v4
         with:
-          distribution: temurin
-          java-version: '17'
-          cache: maven
-
-      - name: Test API
-        if: matrix.app.name == 'blog-api'
-        working-directory: apps/blog-api
-        run: mvn -B test
+          name: java-app-jars
+          path: .
 
       - name: Login to GHCR
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
@@ -55,10 +97,24 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push image
+        if: ${{ matrix.build_args == '' }}
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
         with:
-          context: ${{ matrix.app.context }}
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: |
-            ghcr.io/${{ env.OWNER }}/${{ matrix.app.name }}:${{ github.sha }}
-            ghcr.io/${{ env.OWNER }}/${{ matrix.app.name }}:latest
+            ghcr.io/${{ env.OWNER }}/${{ matrix.image }}:${{ github.sha }}
+            ghcr.io/${{ env.OWNER }}/${{ matrix.image }}:latest
+
+      - name: Build and push Java image
+        if: ${{ matrix.build_args != '' }}
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          build-args: ${{ matrix.build_args }}
+          tags: |
+            ghcr.io/${{ env.OWNER }}/${{ matrix.image }}:${{ github.sha }}
+            ghcr.io/${{ env.OWNER }}/${{ matrix.image }}:latest

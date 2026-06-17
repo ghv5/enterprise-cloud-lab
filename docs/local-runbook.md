@@ -20,6 +20,7 @@ Disk: 100 GB+
 
 ```bash
 docker version
+./mvnw -v
 k3d version
 kubectl version --client
 helm version
@@ -102,14 +103,42 @@ If the remote repository already has commits, fetch and merge first.
 
 ## 7. Enable GitHub Actions
 
-Copy the workflow template into GitHub's workflow directory:
+Copy the workflow templates into GitHub's workflow directory:
 
 ```bash
 mkdir -p .github/workflows
-cp ci/github-actions/build-and-push.yml .github/workflows/build-and-push.yml
+cp ci/github-actions/*.yml .github/workflows/
 ```
 
-Push the workflow to trigger GHCR image builds.
+Push the workflows to trigger CI, image builds, preview deploys, and optional
+local self-hosted runner CD.
+
+### Optional: run the local reference services first
+
+This stack does not need k3d. It is useful for validating the merged
+`apps/ + platform/ + ops/ + scripts/` flow before touching the cluster path.
+
+```bash
+make verify
+make dev-up
+make smoke
+```
+
+Access entries:
+
+```text
+http://localhost:18080          # api-gateway
+http://localhost:19090          # Spring Boot Admin
+http://localhost:19091          # Prometheus
+http://localhost:19092          # Grafana
+http://localhost:19093          # Alertmanager
+```
+
+Stop it with:
+
+```bash
+make dev-down
+```
 
 ## 8. Local App Smoke Test
 
@@ -118,7 +147,7 @@ Dockerfile:
 
 ```bash
 cd apps/blog-api
-mvn -B -DskipTests package
+../../mvnw -B -DskipTests package
 cd ../..
 docker build -f apps/blog-api/Dockerfile.local -t blog-api:local apps/blog-api
 docker build -t blog-web:local apps/blog-web
@@ -148,7 +177,7 @@ After APISIX is installed, apply the Argo CD applications:
 kubectl apply -f deploy/argocd/blog-lab-apps.yaml
 ```
 
-The app images are configured as:
+The blog app images are configured as:
 
 ```text
 ghcr.io/ghv5/blog-api:latest

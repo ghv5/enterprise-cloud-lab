@@ -1,0 +1,47 @@
+name: deploy-local
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: Target environment
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+  push:
+    branches:
+      - develop
+      - main
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, macOS, enterprise-cloud-lab]
+    environment: ${{ github.event.inputs.target_env || (github.ref_name == 'main' && 'prod' || 'dev') }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - run: ./mvnw -B -ntp verify
+
+      - run: ./scripts/stack-down.sh ${{ github.event.inputs.target_env || (github.ref_name == 'main' && 'prod' || 'dev') }}
+
+      - run: ./scripts/stack-up.sh ${{ github.event.inputs.target_env || (github.ref_name == 'main' && 'prod' || 'dev') }}
+
+      - name: Smoke check
+        run: |
+          if [ "${{ github.event.inputs.target_env || (github.ref_name == 'main' && 'prod' || 'dev') }}" = "prod" ]; then
+            ./scripts/smoke-check.sh http://localhost:38080
+          elif [ "${{ github.event.inputs.target_env || (github.ref_name == 'main' && 'prod' || 'dev') }}" = "test" ]; then
+            ./scripts/smoke-check.sh http://localhost:28080
+          else
+            ./scripts/smoke-check.sh http://localhost:18080
+          fi

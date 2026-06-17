@@ -5,9 +5,10 @@
 Requires Java 17 and Maven.
 
 ```bash
+./mvnw -B -ntp verify
 cd apps/blog-api
-mvn test
-PORT=8080 APP_VERSION=local mvn spring-boot:run
+../../mvnw test
+PORT=8080 APP_VERSION=local ../../mvnw spring-boot:run
 ```
 
 ## Build Images Locally
@@ -19,16 +20,19 @@ docker build -t blog-web:local apps/blog-web
 
 ## GitHub Actions
 
-The workflow template is stored at:
+The workflow templates are stored at:
 
 ```text
+ci/github-actions/ci.yml
 ci/github-actions/build-and-push.yml
+ci/github-actions/preview.yml
+ci/github-actions/deploy-local.yml
 ```
 
-For GitHub to execute it, place it at repository root:
+For GitHub to execute them, place them at repository root:
 
 ```text
-.github/workflows/build-and-push.yml
+.github/workflows/*.yml
 ```
 
 The workflow pushes images to:
@@ -36,6 +40,42 @@ The workflow pushes images to:
 ```text
 ghcr.io/<github-owner>/blog-api:<git-sha>
 ghcr.io/<github-owner>/blog-web:<git-sha>
+ghcr.io/<github-owner>/enterprise-cloud-lab-admin-server:<git-sha>
+ghcr.io/<github-owner>/enterprise-cloud-lab-api-gateway:<git-sha>
+ghcr.io/<github-owner>/enterprise-cloud-lab-user-service:<git-sha>
+ghcr.io/<github-owner>/enterprise-cloud-lab-order-service:<git-sha>
+```
+
+## Local Reference Stack
+
+Bring up the local service stack without k3d:
+
+```bash
+make verify
+make dev-up
+make smoke
+```
+
+The default smoke target is `http://localhost:18080` and validates:
+
+- `/actuator/health`
+- `/api/v1/users/1`
+- `/api/v1/orders/1`
+
+Stop it with:
+
+```bash
+make dev-down
+```
+
+## Preview Deploy
+
+The preview workflow builds the Java service images, copies
+`ops/docker/docker-compose.preview.yml` to the local Mac over SSH, and starts a
+PR-specific Docker Compose stack under:
+
+```text
+/Users/mac/pspace/deploy/enterprise-cloud-lab/pr-<number>
 ```
 
 ## GHCR Pull Secret

@@ -1,0 +1,30 @@
+server:
+  port: ${SERVER_PORT:18080}
+
+spring:
+  application:
+    name: api-gateway
+  boot:
+    admin:
+      client:
+        url: ${SPRING_BOOT_ADMIN_URL:http://localhost:19090}
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: ${user.service.url:${USER_SERVICE_URL:http://localhost:18081}}
+          predicates:
+            - Path=/api/v1/users/**
+        - id: order-service
+          uri: ${order.service.url:${ORDER_SERVICE_URL:http://localhost:18082}}
+          predicates:
+            - Path=/api/v1/orders/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,gateway
+  tracing:
+    sampling:
+      probability: 1.0

@@ -1,0 +1,37 @@
+services:
+  admin-server:
+    image: ${ADMIN_SERVER_IMAGE}
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 19090
+    ports:
+      - "${ADMIN_SERVER_PORT}:19090"
+
+  user-service:
+    image: ${USER_SERVICE_IMAGE}
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 18081
+      SPRING_BOOT_ADMIN_URL: http://admin-server:19090
+
+  order-service:
+    image: ${ORDER_SERVICE_IMAGE}
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 18082
+      SPRING_BOOT_ADMIN_URL: http://admin-server:19090
+
+  api-gateway:
+    image: ${API_GATEWAY_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      - admin-server
+      - user-service
+      - order-service
+    environment:
+      SERVER_PORT: 18080
+      SPRING_BOOT_ADMIN_URL: http://admin-server:19090
+      USER_SERVICE_URL: http://user-service:18081
+      ORDER_SERVICE_URL: http://order-service:18082
+    ports:
+      - "${GATEWAY_PORT}:18080"

@@ -1,0 +1,27 @@
+server:
+  port: ${SERVER_PORT:18082}
+
+spring:
+  application:
+    name: order-service
+  boot:
+    admin:
+      client:
+        url: ${SPRING_BOOT_ADMIN_URL:http://localhost:19090}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,loggers,threaddump,heapdump
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} requestId=%X{requestId:-na} traceId=%X{traceId:-na} spanId=%X{spanId:-na} - %msg%n"

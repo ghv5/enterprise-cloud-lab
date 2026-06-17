@@ -1,2 +1,11 @@
 .DS_Store
+.idea/
+.vscode/
 target/
+.mvn/wrapper/maven-wrapper.jar
+.local/
+logs/
+*.log
+*.pid
+/.env.local
+/.env.*.local

@@ -1,18 +1,28 @@
 # Enterprise Cloud Lab
 
-This repository is a lightweight enterprise deployment lab for a local Mac
-workstation first, with cloud servers kept as an optional later target. The
-business apps are intentionally small; the main focus is CI/CD, GitOps
-deployment, rollback, rate limiting, canary release, and observability.
+This repository is a local-first enterprise delivery lab. It combines a
+lightweight k3d + GitOps playground with a Java microservice engineering
+scaffold, so CI, preview environments, self-hosted runner CD, canary release,
+rollback, rate limiting, and observability can all be exercised in one place.
 
 ## Directory Layout
 
 ```text
 apps/
+  admin-server/          # Spring Boot Admin sample for local-first service operations
+  api-gateway/           # Spring Cloud Gateway entrypoint for the reference services
   blog-api/              # Minimal Spring Boot API used for rollout and metrics demos
   blog-web/              # Static blog frontend served by Nginx
+  order-service/         # Sample downstream service for local preview and smoke checks
+  user-service/          # Sample downstream service for local preview and smoke checks
 ci/
-  github-actions/        # GitHub Actions workflow templates for GHCR
+  github-actions/        # GitHub Actions workflow templates
+docs/
+  architecture.md        # Target architecture and sizing
+  engineering/           # CI / preview / runner workflow notes
+  local-runbook.md       # Local Mac workflow
+  ops/                   # Operations and troubleshooting notes
+  runbook.md             # Deployment, canary, rollback, and verification flow
 deploy/
   argocd/                # Argo CD Application manifests
   helm/                  # Helm charts for the sample apps
@@ -21,10 +31,16 @@ infra/
   local-k3d/             # Local Mac cluster scripts
   k3s/                   # Optional three-node cloud K3s planning notes
   scripts/               # Optional cloud install command templates
-docs/
-  architecture.md        # Target architecture and sizing
-  local-runbook.md       # Local Mac workflow
-  runbook.md             # Deployment, canary, rollback, and verification flow
+ops/
+  docker/                # Local preview and observability compose assets
+  environments/          # dev / test / prod local environment baselines
+platform/
+  common-core/           # Shared API envelope and business exception primitives
+  common-web/            # Shared requestId filter and exception handler
+scripts/
+  stack-up.sh            # Starts the local reference service stack
+  stack-down.sh          # Stops the local reference service stack
+  smoke-check.sh         # Smoke tests the local gateway and services
 ```
 
 ## Repository
@@ -50,24 +66,27 @@ Treat this directory as the repository root when pushing to GitHub.
 - Gateway: APISIX.
 - Observability: Prometheus, Grafana, Loki, SkyWalking.
 
-## Business Apps
+## Workload Tracks
 
-- `blog-api`: small Spring Boot HTTP service with `/actuator/health`,
-  `/actuator/prometheus`, `/api/info`, and `/api/posts`.
-- `blog-web`: static page that calls the API through the gateway.
+- `blog-api` + `blog-web` remain the smallest possible workloads for Helm,
+  APISIX, Argo CD, and Argo Rollouts drills on k3d.
+- `admin-server`, `api-gateway`, `user-service`, and `order-service` provide a
+  local-first Java service stack for CI, preview deploy, self-hosted runner CD,
+  request tracing, and smoke-check exercises.
 
-The API exposes a version string through `APP_VERSION`, which makes canary,
-rollback, metrics, and Java agent tracing behavior easy to observe.
+The blog API exposes a version string through `APP_VERSION`, which keeps
+canary, rollback, metrics, and Java agent tracing behavior easy to observe.
 
 ## How This Lab Should Be Used
 
 1. Push app code to GitHub.
-2. GitHub Actions builds images and pushes them to GHCR.
-3. CI updates image tags in the deployment Git path.
-4. Argo CD syncs the desired state to K3s.
-5. Argo Rollouts performs canary steps.
-6. APISIX applies routing and rate limiting.
-7. Grafana/Prometheus/Loki show deployment behavior.
+2. GitHub Actions runs root Maven verification and builds container images.
+3. Pull requests can spin up a local preview stack through SSH to the Mac host.
+4. Mainline builds publish images to GHCR.
+5. Argo CD syncs the k3d workloads from the deployment path.
+6. Argo Rollouts performs canary steps.
+7. APISIX applies routing and rate limiting.
+8. Grafana/Prometheus/Loki/SkyWalking show deployment behavior.
 
 Keep secrets outside Git. Use GitHub Actions secrets, Kubernetes Secrets, or a
 cloud secret manager.
